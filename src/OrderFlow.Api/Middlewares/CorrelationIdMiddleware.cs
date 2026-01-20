@@ -4,10 +4,12 @@ public class CorrelationIdMiddleware
 {
     private const string HeaderName = "X-Correlation-Id";
     private readonly RequestDelegate _next;
+    private readonly ILogger<CorrelationIdMiddleware> _logger;
 
-    public CorrelationIdMiddleware(RequestDelegate next)
+    public CorrelationIdMiddleware(RequestDelegate next, ILogger<CorrelationIdMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -17,16 +19,24 @@ public class CorrelationIdMiddleware
                 ? incoming.ToString()
                 : Guid.NewGuid().ToString();
 
-        // guardar el id dentro del request context (por si lo quieres leer después)
         context.Items[HeaderName] = correlationId;
 
-        // agregarlo como header en la respuesta
-        context.Response.OnStarting(() =>
+        using (_logger.BeginScope(new Dictionary<string, object>
         {
-            context.Response.Headers[HeaderName] = correlationId;
-            return Task.CompletedTask;
-        });
+            ["CorrelationId"] = correlationId
+        }))
+        {
+            context.Response.OnStarting(() =>
+            {
+                context.Response.Headers[HeaderName] = correlationId;
+                return Task.CompletedTask;
+            });
 
-        await _next(context);
+            _logger.LogInformation("Request started {Method} {Path}", context.Request.Method, context.Request.Path);
+
+            await _next(context);
+
+            _logger.LogInformation("Request finished {StatusCode}", context.Response.StatusCode);
+        }
     }
 }
