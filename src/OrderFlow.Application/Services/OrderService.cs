@@ -1,28 +1,25 @@
-using Microsoft.EntityFrameworkCore;
-using OrderFlow.Api.Data;
-using OrderFlow.Api.Models;
+using OrderFlow.Application.Abstractions;
+using OrderFlow.Domain.Models;
 
-namespace OrderFlow.Api.Services;
+namespace OrderFlow.Application.Services;
 
 public class OrderService
 {
-    private readonly AppDbContext _db;
+    private readonly IOrderRepository _orders;
 
-    public OrderService(AppDbContext db)
+    public OrderService(IOrderRepository orders)
     {
-        _db = db;
+        _orders = orders;
     }
 
     public async Task<List<Order>> GetAllAsync()
     {
-        return await _db.Orders
-            .OrderByDescending(o => o.Id)
-            .ToListAsync();
+        return await _orders.GetAllAsync();
     }
 
     public async Task<Order?> GetByIdAsync(int id)
     {
-        return await _db.Orders.FindAsync(id);
+        return await _orders.GetByIdAsync(id);
     }
 
     public async Task<Order> CreateAsync(string customerName)
@@ -34,36 +31,36 @@ public class OrderService
             Status = OrderStatus.Draft
         };
 
-        _db.Orders.Add(order);
-        await _db.SaveChangesAsync();
+        await _orders.AddAsync(order);
+        await _orders.SaveChangesAsync();
 
         return order;
     }
 
     public async Task<(bool ok, string? error, Order? order)> ConfirmAsync(int id)
     {
-        var order = await _db.Orders.FindAsync(id);
-        if (order is null) return (false, "Order not found", null);
+        var order = await _orders.GetByIdAsync(id);
+        if (order is null) return (false, null, null);
 
         if (order.Status != OrderStatus.Draft)
             return (false, "Only Draft orders can be confirmed", null);
 
         order.Status = OrderStatus.Confirmed;
-        await _db.SaveChangesAsync();
+        await _orders.SaveChangesAsync();
 
         return (true, null, order);
     }
 
     public async Task<(bool ok, string? error, Order? order)> CancelAsync(int id)
     {
-        var order = await _db.Orders.FindAsync(id);
-        if (order is null) return (false, "Order not found", null);
+        var order = await _orders.GetByIdAsync(id);
+        if (order is null) return (false, null, null);
 
         if (order.Status == OrderStatus.Cancelled)
             return (false, "Order already cancelled", null);
 
         order.Status = OrderStatus.Cancelled;
-        await _db.SaveChangesAsync();
+        await _orders.SaveChangesAsync();
 
         return (true, null, order);
     }

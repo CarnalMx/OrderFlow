@@ -1,4 +1,4 @@
-namespace OrderFlow.Api.Models;
+namespace OrderFlow.Domain.Models;
 
 public class Order
 {

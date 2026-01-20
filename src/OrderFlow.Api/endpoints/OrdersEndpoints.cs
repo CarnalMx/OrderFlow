@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using OrderFlow.Api.Data;
 using OrderFlow.Api.Dtos;
-using OrderFlow.Api.Models;
-using OrderFlow.Api.Services;
+using OrderFlow.Application.Services;
+using OrderFlow.Domain.Models;
 
 namespace OrderFlow.Api.Endpoints;
 
@@ -34,6 +33,8 @@ public static class OrdersEndpoints
         app.MapPost("/orders/{id:int}/confirm", async (int id, OrderService orders) =>
         {
             var (ok, error, order) = await orders.ConfirmAsync(id);
+
+            if (order is null && error is null) return Results.NotFound();
             if (!ok) return Results.BadRequest(new { error });
 
             return Results.Ok(order);
@@ -42,6 +43,8 @@ public static class OrdersEndpoints
         app.MapPost("/orders/{id:int}/cancel", async (int id, OrderService orders) =>
         {
             var (ok, error, order) = await orders.CancelAsync(id);
+
+            if (order is null && error is null) return Results.NotFound();
             if (!ok) return Results.BadRequest(new { error });
 
             return Results.Ok(order);

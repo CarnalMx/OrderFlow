@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using OrderFlow.Api.Models;
+using OrderFlow.Domain.Models;
 
-namespace OrderFlow.Api.Data;
+namespace OrderFlow.Infrastructure.Data;
 
 public class AppDbContext : DbContext
 {

@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using OrderFlow.Api.Data;
-using OrderFlow.Api.Services;
-using OrderFlow.Api.Models;
+using OrderFlow.Application.Abstractions;
+using OrderFlow.Application.Services;
+using OrderFlow.Domain.Models;
+using OrderFlow.Infrastructure.Data;
+using OrderFlow.Infrastructure.Repositories;
 
 namespace OrderFlow.Tests.Services;
 
@@ -14,7 +16,9 @@ public class OrderServiceTests
             .Options;
 
         db = new AppDbContext(options);
-        return new OrderService(db);
+
+        IOrderRepository repo = new OrderRepository(db);
+        return new OrderService(repo);
     }
 
     [Fact]
@@ -74,4 +78,17 @@ public class OrderServiceTests
         Assert.NotNull(error);
         Assert.Null(cancelled);
     }
+
+    [Fact]
+    public async Task ConfirmAsync_WhenOrderDoesNotExist_ReturnsNotFoundPattern()
+    {
+        var service = CreateService(out var db);
+
+        var (ok, error, order) = await service.ConfirmAsync(999);
+
+        Assert.False(ok);
+        Assert.Null(error);
+        Assert.Null(order);
+    }
+
 }
