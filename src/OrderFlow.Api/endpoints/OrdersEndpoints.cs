@@ -55,20 +55,5 @@ public static class OrdersEndpoints
             return Results.Ok(order);
         });
 
-        // Test outbox endpoint
-        app.MapPost("/outbox/test", async (AppDbContext db) =>
-        {
-            db.OutboxMessages.Add(new OutboxMessage
-            {
-                Type = "TestMessage",
-                PayloadJson = "{\"hello\":\"world\"}",
-                CreatedAtUtc = DateTime.UtcNow
-            });
-
-            await db.SaveChangesAsync();
-            return Results.Ok(new { status = "created" });
-        });
-
-
     }
 }

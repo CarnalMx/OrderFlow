@@ -6,10 +6,12 @@ namespace OrderFlow.Application.Services;
 public class OrderService
 {
     private readonly IOrderRepository _orders;
+    private readonly IOutboxRepository _outbox;
 
-    public OrderService(IOrderRepository orders)
+    public OrderService(IOrderRepository orders, IOutboxRepository outbox)
     {
         _orders = orders;
+        _outbox = outbox;
     }
 
     public async Task<List<Order>> GetAllAsync()
@@ -46,6 +48,12 @@ public class OrderService
             return (false, "Only Draft orders can be confirmed", null);
 
         order.Status = OrderStatus.Confirmed;
+        await _outbox.AddAsync(new OutboxMessage
+        {
+            Type = "OrderConfirmed",
+            PayloadJson = $"{{\"orderId\":{order.Id}}}",
+            CreatedAtUtc = DateTime.UtcNow
+        });
         await _orders.SaveChangesAsync();
 
         return (true, null, order);
