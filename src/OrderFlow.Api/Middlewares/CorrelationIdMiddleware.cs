@@ -14,6 +14,7 @@ public class CorrelationIdMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+
         var correlationId =
             context.Request.Headers.TryGetValue(HeaderName, out var incoming) && !string.IsNullOrWhiteSpace(incoming)
                 ? incoming.ToString()
@@ -32,11 +33,18 @@ public class CorrelationIdMiddleware
                 return Task.CompletedTask;
             });
 
-            _logger.LogInformation("Request started {Method} {Path}", context.Request.Method, context.Request.Path);
+            var path = context.Request.Path.Value ?? "";
+
+            var shouldLog = !path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase);
+
+            if (shouldLog)
+                _logger.LogInformation("Request started {Method} {Path}", context.Request.Method, context.Request.Path);
 
             await _next(context);
 
-            _logger.LogInformation("Request finished {StatusCode}", context.Response.StatusCode);
+            if (shouldLog)
+                _logger.LogInformation("Request finished {StatusCode}", context.Response.StatusCode);
         }
+
     }
 }

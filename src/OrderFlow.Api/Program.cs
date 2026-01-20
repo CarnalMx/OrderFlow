@@ -5,6 +5,7 @@ using OrderFlow.Application.Services;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Infrastructure.Repositories;
 using OrderFlow.Api.Middlewares;
+using OrderFlow.Api.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddHostedService<OutboxProcessorService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
@@ -29,7 +31,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 

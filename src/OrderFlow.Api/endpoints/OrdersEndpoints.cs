@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using OrderFlow.Api.Dtos;
 using OrderFlow.Application.Services;
 using OrderFlow.Domain.Models;
+using OrderFlow.Infrastructure.Data;
 
 namespace OrderFlow.Api.Endpoints;
 
@@ -9,6 +10,9 @@ public static class OrdersEndpoints
 {
     public static void MapOrdersEndpoints(this WebApplication app)
     {
+
+        //Map getters related to orders
+
         app.MapGet("/orders", async (OrderService orders) =>
         {
             var result = await orders.GetAllAsync();
@@ -21,6 +25,7 @@ public static class OrdersEndpoints
             return order is null ? Results.NotFound() : Results.Ok(order);
         });
 
+        //Map commands related to orders
         app.MapPost("/orders", async (CreateOrderRequest request, OrderService orders) =>
         {
             if (string.IsNullOrWhiteSpace(request.CustomerName))
@@ -48,6 +53,20 @@ public static class OrdersEndpoints
             if (!ok) return Results.BadRequest(new { error });
 
             return Results.Ok(order);
+        });
+
+        // Test outbox endpoint
+        app.MapPost("/outbox/test", async (AppDbContext db) =>
+        {
+            db.OutboxMessages.Add(new OutboxMessage
+            {
+                Type = "TestMessage",
+                PayloadJson = "{\"hello\":\"world\"}",
+                CreatedAtUtc = DateTime.UtcNow
+            });
+
+            await db.SaveChangesAsync();
+            return Results.Ok(new { status = "created" });
         });
 
 
