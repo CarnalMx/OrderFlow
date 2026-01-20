@@ -4,7 +4,7 @@ using OrderFlow.Api.Endpoints;
 using OrderFlow.Application.Services;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Infrastructure.Repositories;
-
+using OrderFlow.Api.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +19,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<OrderService>();
 var app = builder.Build();
+
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
