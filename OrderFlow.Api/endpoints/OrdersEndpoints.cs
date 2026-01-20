@@ -40,5 +40,35 @@ public static class OrdersEndpoints
 
             return Results.Created($"/orders/{order.Id}", order);
         });
+
+        app.MapPost("/orders/{id:int}/confirm", async (int id, AppDbContext db) =>
+        {
+            var order = await db.Orders.FindAsync(id);
+            if (order is null) return Results.NotFound();
+
+            if (order.Status != OrderStatus.Draft)
+                return Results.BadRequest(new { error = "Only Draft orders can be confirmed" });
+
+            order.Status = OrderStatus.Confirmed;
+            await db.SaveChangesAsync();
+
+            return Results.Ok(order);
+        });
+
+        app.MapPost("/orders/{id:int}/cancel", async (int id, AppDbContext db) =>
+        {
+            var order = await db.Orders.FindAsync(id);
+            if (order is null) return Results.NotFound();
+
+            if (order.Status == OrderStatus.Cancelled)
+                return Results.BadRequest(new { error = "Order already cancelled" });
+
+            order.Status = OrderStatus.Cancelled;
+            await db.SaveChangesAsync();
+
+            return Results.Ok(order);
+        });
+
+
     }
 }
