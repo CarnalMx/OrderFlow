@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Api.Dtos;
 using OrderFlow.Application.Services;
-using OrderFlow.Domain.Models;
-using OrderFlow.Infrastructure.Data;
 
 namespace OrderFlow.Api.Endpoints;
 

@@ -99,7 +99,7 @@ public class OrderServiceTests
         var (ok, error, order) = await service.ConfirmAsync(999);
 
         Assert.False(ok);
-        Assert.Null(error);
+        Assert.Equal("Order not found", error);
         Assert.Null(order);
     }
 

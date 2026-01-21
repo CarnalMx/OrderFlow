@@ -14,11 +14,16 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IOutboxStore, OutboxStore>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<OrderService>();
-builder.Services.AddHostedService<OutboxProcessorService>();
 builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
+
 builder.Services.AddScoped<IOutboxHandler, OrderConfirmedHandler>();
+
+builder.Services.AddScoped<OutboxProcessor>();
+builder.Services.AddHostedService<OutboxProcessorService>();
+
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
