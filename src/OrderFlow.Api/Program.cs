@@ -6,6 +6,8 @@ using OrderFlow.Application.Abstractions;
 using OrderFlow.Infrastructure.Repositories;
 using OrderFlow.Api.Middlewares;
 using OrderFlow.Api.BackgroundServices;
+using OrderFlow.Api.Outbox;
+using OrderFlow.Api.Outbox.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,8 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddHostedService<OutboxProcessorService>();
 builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
+builder.Services.AddScoped<IOutboxHandler, OrderConfirmedHandler>();
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));

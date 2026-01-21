@@ -1,10 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderFlow.Infrastructure.Data;
+using OrderFlow.Api.Outbox;
 
 namespace OrderFlow.Api.BackgroundServices;
 
 public class OutboxProcessorService : BackgroundService
 {
+    private static readonly string WorkerId = $"worker-{Environment.MachineName}-{Guid.NewGuid():N}";
+    private static readonly TimeSpan LockDuration = TimeSpan.FromSeconds(30);
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<OutboxProcessorService> _logger;
 
@@ -28,30 +32,57 @@ public class OutboxProcessorService : BackgroundService
             {
                 using var scope = _scopeFactory.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var handlers = scope.ServiceProvider.GetServices<IOutboxHandler>();
 
                 var now = DateTime.UtcNow;
 
-                // Just pending messages that are due to be processed
+                // 1) FETCH: mensajes elegibles
                 var pending = await db.OutboxMessages
                     .Where(m => m.ProcessedAtUtc == null)
                     .Where(m => m.NextAttemptAtUtc == null || m.NextAttemptAtUtc <= now)
+                    .Where(m => m.LockedAtUtc == null || m.LockExpiresAtUtc == null || m.LockExpiresAtUtc <= now)
                     .OrderBy(m => m.Id)
                     .Take(10)
                     .ToListAsync(stoppingToken);
 
+                // 2) CLAIM: lockearlos y guardar
+                if (pending.Count > 0)
+                {
+                    foreach (var msg in pending)
+                    {
+                        msg.LockedAtUtc = now;
+                        msg.LockedBy = WorkerId;
+                        msg.LockExpiresAtUtc = now.Add(LockDuration);
+                    }
+
+                    await db.SaveChangesAsync(stoppingToken);
+                }
+
+                // 3) PROCESS: solo si el lock es tuyo
                 foreach (var msg in pending)
                 {
+                    if (msg.LockedBy != WorkerId)
+                        continue;
+
                     try
                     {
-                        // ✅ Here would go the actual processing according to msg.Type
                         _logger.LogInformation("Processing outbox message {Id} {Type}", msg.Id, msg.Type);
 
-                        // Simulation: if you want to test failures, uncomment this:
-                        // if (msg.Type == "OrderConfirmed") throw new Exception("Simulated failure");
+                        // ✅ éxito
+                        var handler = handlers.FirstOrDefault(h => h.Type == msg.Type)
+                        ?? throw new Exception($"No handler registered for outbox type '{msg.Type}'");
+
+                        await handler.HandleAsync(msg, stoppingToken);
 
                         msg.ProcessedAtUtc = DateTime.UtcNow;
                         msg.LastError = null;
                         msg.NextAttemptAtUtc = null;
+
+
+                        // unlock
+                        msg.LockedAtUtc = null;
+                        msg.LockedBy = null;
+                        msg.LockExpiresAtUtc = null;
                     }
                     catch (Exception ex)
                     {
@@ -60,7 +91,7 @@ public class OutboxProcessorService : BackgroundService
 
                         if (msg.AttemptCount >= MaxAttempts)
                         {
-                            // Dead-letter: give up after max attempts
+                            // dead-letter
                             msg.ProcessedAtUtc = DateTime.UtcNow;
                             msg.NextAttemptAtUtc = null;
 
@@ -77,11 +108,18 @@ public class OutboxProcessorService : BackgroundService
                                 "Outbox message {Id} failed (attempt {Attempt}/{Max}). Retrying in {DelaySeconds}s",
                                 msg.Id, msg.AttemptCount, MaxAttempts, delaySeconds);
                         }
+
+                        // unlock
+                        msg.LockedAtUtc = null;
+                        msg.LockedBy = null;
+                        msg.LockExpiresAtUtc = null;
                     }
                 }
 
+                // guardar una sola vez al final
                 if (pending.Count > 0)
                     await db.SaveChangesAsync(stoppingToken);
+
             }
             catch (Exception ex)
             {
