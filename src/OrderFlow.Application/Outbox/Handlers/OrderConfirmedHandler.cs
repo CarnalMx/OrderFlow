@@ -1,8 +1,8 @@
 using System.Text.Json;
-using .OrderFlow.Api.Outbox;
+using OrderFlow.Application.Outbox;
 using OrderFlow.Domain.Models;
 
-namespace OrderFlow.Api.Outbox.Handlers;
+namespace OrderFlow.Application.Outbox.Handlers;
 
 public class OrderConfirmedHandler : IOutboxHandler
 {

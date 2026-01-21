@@ -9,7 +9,17 @@ namespace OrderFlow.Tests.Services;
 
 public class OrderServiceTests
 {
-    private static OrderService CreateService(out AppDbContext db)
+    private sealed class FakeOutboxRepository : IOutboxRepository
+    {
+        public List<OutboxMessage> Messages { get; } = new();
+
+        public Task AddAsync(OutboxMessage message)
+        {
+            Messages.Add(message);
+            return Task.CompletedTask;
+        }
+    }
+    private static OrderService CreateService(out AppDbContext db, out FakeOutboxRepository outbox)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -18,13 +28,15 @@ public class OrderServiceTests
         db = new AppDbContext(options);
 
         IOrderRepository repo = new OrderRepository(db);
-        return new OrderService(repo);
+
+        outbox = new FakeOutboxRepository();
+        return new OrderService(repo, outbox);
     }
 
     [Fact]
     public async Task CreateAsync_CreatesDraftOrder()
     {
-        var service = CreateService(out var db);
+        var service = CreateService(out var db, out var outbox);
 
         var order = await service.CreateAsync("Carlos");
 
@@ -37,7 +49,7 @@ public class OrderServiceTests
     [Fact]
     public async Task ConfirmAsync_WhenDraft_ChangesStatusToConfirmed()
     {
-        var service = CreateService(out var db);
+        var service = CreateService(out var db, out var outbox);
 
         var created = await service.CreateAsync("Carlos");
 
@@ -52,7 +64,7 @@ public class OrderServiceTests
     [Fact]
     public async Task ConfirmAsync_WhenAlreadyConfirmed_ReturnsError()
     {
-        var service = CreateService(out var db);
+        var service = CreateService(out var db, out var outbox);
 
         var created = await service.CreateAsync("Carlos");
         await service.ConfirmAsync(created.Id);
@@ -67,7 +79,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CancelAsync_WhenCancelledTwice_ReturnsError()
     {
-        var service = CreateService(out var db);
+        var service = CreateService(out var db, out var outbox);
 
         var created = await service.CreateAsync("Carlos");
         await service.CancelAsync(created.Id);
@@ -82,13 +94,25 @@ public class OrderServiceTests
     [Fact]
     public async Task ConfirmAsync_WhenOrderDoesNotExist_ReturnsNotFoundPattern()
     {
-        var service = CreateService(out var db);
+        var service = CreateService(out var db, out var outbox);
 
         var (ok, error, order) = await service.ConfirmAsync(999);
 
         Assert.False(ok);
         Assert.Null(error);
         Assert.Null(order);
+    }
+
+    [Fact]
+    public async Task ConfirmAsync_WhenDraft_CreatesOutboxMessage()
+    {
+        var service = CreateService(out var db, out var outbox);
+
+        var created = await service.CreateAsync("Carlos");
+        await service.ConfirmAsync(created.Id);
+
+        Assert.Single(outbox.Messages);
+        Assert.Equal("OrderConfirmed", outbox.Messages[0].Type);
     }
 
 }

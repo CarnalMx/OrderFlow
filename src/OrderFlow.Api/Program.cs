@@ -6,8 +6,8 @@ using OrderFlow.Application.Abstractions;
 using OrderFlow.Infrastructure.Repositories;
 using OrderFlow.Api.Middlewares;
 using OrderFlow.Api.BackgroundServices;
-using OrderFlow.Api.Outbox;
-using OrderFlow.Api.Outbox.Handlers;
+using OrderFlow.Application.Outbox;
+using OrderFlow.Application.Outbox.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 

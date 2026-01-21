@@ -1,6 +1,6 @@
 using OrderFlow.Domain.Models;
 
-namespace OrderFlow.Api.Outbox;
+namespace OrderFlow.Application.Outbox;
 
 public interface IOutboxHandler
 {

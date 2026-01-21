@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderFlow.Infrastructure.Data;
-using OrderFlow.Api.Outbox;
+using OrderFlow.Application.Outbox;
 
 namespace OrderFlow.Api.BackgroundServices;
 
