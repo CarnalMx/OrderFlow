@@ -5,11 +5,11 @@ namespace OrderFlow.Api.BackgroundServices;
 public class OutboxProcessorService : BackgroundService
 {
     private readonly ILogger<OutboxProcessorService> _logger;
-    private readonly OutboxProcessor _processor;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public OutboxProcessorService(OutboxProcessor processor, ILogger<OutboxProcessorService> logger)
+    public OutboxProcessorService(IServiceScopeFactory scopeFactory, ILogger<OutboxProcessorService> logger)
     {
-        _processor = processor;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -21,7 +21,10 @@ public class OutboxProcessorService : BackgroundService
         {
             try
             {
-                await _processor.ProcessOnceAsync(stoppingToken);
+                using var scope = _scopeFactory.CreateScope();
+                var processor = scope.ServiceProvider.GetRequiredService<OutboxProcessor>();
+
+                await processor.ProcessOnceAsync(stoppingToken);
             }
             catch (Exception ex)
             {

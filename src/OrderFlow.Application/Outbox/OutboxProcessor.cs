@@ -31,14 +31,12 @@ public class OutboxProcessor
     {
         var now = DateTime.UtcNow;
 
-        var pending = await _store.GetPendingAsync(now, Take, ct);
+        var claimed = await _store.ClaimAsync(now, Take, _workerId, LockDuration, ct);
 
-        if (pending.Count == 0)
+        if (claimed.Count == 0)
             return;
-
-        await _store.ClaimAsync(pending, _workerId, now, LockDuration, ct);
-
-        foreach (var msg in pending)
+        
+        foreach (var msg in claimed)
         {
             // Safety: si por alguna razon no fue claimeado por mi, no lo proceso
             if (msg.LockedBy != _workerId)

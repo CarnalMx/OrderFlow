@@ -16,7 +16,8 @@ public static class TestDbFactory
         var connectionString = config.GetConnectionString("Testing");
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlServer(connectionString)
+            .UseSqlServer(connectionString, x =>
+                x.MigrationsAssembly("OrderFlow.Infrastructure"))
             .Options;
 
         return new AppDbContext(options);
@@ -25,6 +26,6 @@ public static class TestDbFactory
     public static async Task ResetDatabaseAsync(AppDbContext db)
     {
         await db.Database.EnsureDeletedAsync();
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
     }
 }

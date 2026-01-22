@@ -13,7 +13,7 @@ public class OutboxMessage
     public DateTime? ProcessedAtUtc { get; set; }
     public DateTime? LockedAtUtc { get; set; }
     public string? LockedBy { get; set; }
-    public DateTime? LockExpiresAtUtc { get; set; }
+    public DateTime? LockExpireAtUtc { get; set; }
 
     public int AttemptCount { get; set; } = 0;
     public DateTime? NextAttemptAtUtc { get; set; }

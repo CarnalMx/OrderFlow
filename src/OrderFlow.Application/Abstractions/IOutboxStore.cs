@@ -4,14 +4,13 @@ namespace OrderFlow.Application.Abstractions;
 
 public interface IOutboxStore
 {
-    Task<List<OutboxMessage>> GetPendingAsync(DateTime nowUtc, int take, CancellationToken ct);
 
-    Task ClaimAsync(
-        List<OutboxMessage> messages,
-        string workerId,
-        DateTime nowUtc,
-        TimeSpan lockDuration,
-        CancellationToken ct);
+    Task<List<OutboxMessage>> ClaimAsync(
+    DateTime nowUtc,
+    int take,
+    string workerId,
+    TimeSpan lockDuration,
+    CancellationToken ct);
 
     Task MarkProcessedAsync(OutboxMessage message, DateTime nowUtc, CancellationToken ct);
 
@@ -22,4 +21,5 @@ public interface IOutboxStore
         DateTime nextAttemptAtUtc,
         bool deadLetter,
         CancellationToken ct);
+
 }

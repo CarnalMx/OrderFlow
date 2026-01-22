@@ -14,43 +14,65 @@ public class OutboxStore : IOutboxStore
         _db = db;
     }
 
-    public Task<List<OutboxMessage>> GetPendingAsync(DateTime nowUtc, int take, CancellationToken ct)
+    public async Task<List<OutboxMessage>> ClaimAsync(
+    DateTime nowUtc,
+    int take,
+    string workerId,
+    TimeSpan lockDuration,
+    CancellationToken ct)
     {
-        return _db.OutboxMessages
-            .Where(m => m.ProcessedAtUtc == null)
-            .Where(m => m.NextAttemptAtUtc == null || m.NextAttemptAtUtc <= nowUtc)
-            .Where(m => m.LockedAtUtc == null || m.LockExpiresAtUtc == null || m.LockExpiresAtUtc <= nowUtc)
+        var lockSeconds = (int)lockDuration.TotalSeconds;
+
+        var updateSql = @"
+;WITH cte AS (
+    SELECT TOP (@Take) *
+    FROM dbo.OutboxMessages WITH (UPDLOCK, READPAST, ROWLOCK)
+    WHERE
+        ProcessedAtUtc IS NULL
+        AND (NextAttemptAtUtc IS NULL OR NextAttemptAtUtc <= @NowUtc)
+        AND (LockExpireAtUtc IS NULL OR LockExpireAtUtc <= @NowUtc)
+    ORDER BY Id
+)
+UPDATE cte
+SET
+    LockedAtUtc = @NowUtc,
+    LockedBy = @WorkerId,
+    LockExpireAtUtc = DATEADD(SECOND, @LockSeconds, @NowUtc);
+";
+
+        var affected = await _db.Database.ExecuteSqlRawAsync(
+            updateSql,
+            new Microsoft.Data.SqlClient.SqlParameter("@Take", take),
+            new Microsoft.Data.SqlClient.SqlParameter("@NowUtc", nowUtc),
+            new Microsoft.Data.SqlClient.SqlParameter("@WorkerId", workerId),
+            new Microsoft.Data.SqlClient.SqlParameter("@LockSeconds", lockSeconds));
+
+        Console.WriteLine($"[ClaimAsync] affected rows = {affected}");
+
+        // leer lo claimeado por este worker (sin comparar LockedAtUtc exacto)
+        var claimed = await _db.OutboxMessages
+            .Where(m => m.LockedBy == workerId)
+            .Where(m => m.LockExpireAtUtc != null)
             .OrderBy(m => m.Id)
             .Take(take)
             .ToListAsync(ct);
-    }
 
-    public async Task ClaimAsync(
-        List<OutboxMessage> messages,
-        string workerId,
-        DateTime nowUtc,
-        TimeSpan lockDuration,
-        CancellationToken ct)
-    {
-        foreach (var msg in messages)
-        {
-            msg.LockedAtUtc = nowUtc;
-            msg.LockedBy = workerId;
-            msg.LockExpiresAtUtc = nowUtc.Add(lockDuration);
-        }
 
-        await _db.SaveChangesAsync(ct);
+
+        return claimed;
     }
 
     public Task MarkProcessedAsync(OutboxMessage message, DateTime nowUtc, CancellationToken ct)
     {
+        _db.OutboxMessages.Update(message);
+
         message.ProcessedAtUtc = nowUtc;
         message.LastError = null;
         message.NextAttemptAtUtc = null;
 
         message.LockedAtUtc = null;
         message.LockedBy = null;
-        message.LockExpiresAtUtc = null;
+        message.LockExpireAtUtc = null;
 
         return _db.SaveChangesAsync(ct);
     }
@@ -63,6 +85,8 @@ public class OutboxStore : IOutboxStore
         bool deadLetter,
         CancellationToken ct)
     {
+        _db.OutboxMessages.Update(message);
+
         message.AttemptCount += 1;
         message.LastError = error;
 
@@ -78,7 +102,7 @@ public class OutboxStore : IOutboxStore
 
         message.LockedAtUtc = null;
         message.LockedBy = null;
-        message.LockExpiresAtUtc = null;
+        message.LockExpireAtUtc = null;
 
         return _db.SaveChangesAsync(ct);
     }
