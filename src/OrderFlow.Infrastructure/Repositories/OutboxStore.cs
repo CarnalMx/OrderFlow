@@ -47,8 +47,6 @@ SET
             new Microsoft.Data.SqlClient.SqlParameter("@WorkerId", workerId),
             new Microsoft.Data.SqlClient.SqlParameter("@LockSeconds", lockSeconds));
 
-        Console.WriteLine($"[ClaimAsync] affected rows = {affected}");
-
         // leer lo claimeado por este worker (sin comparar LockedAtUtc exacto)
         var claimed = await _db.OutboxMessages
             .Where(m => m.LockedBy == workerId)

@@ -32,7 +32,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<OrderService>();
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
+
+// For testing purposes only
+
+if (app.Environment.IsDevelopment())
+{
+
+    app.MapGet("/debug/crash", () =>
+    {
+        throw new Exception("Boom");
+    });
+
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -48,3 +61,5 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapOrdersEndpoints();
 
 app.Run();
+
+public partial class Program { }
