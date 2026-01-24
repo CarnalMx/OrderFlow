@@ -14,13 +14,13 @@ public class OrderService
         _outbox = outbox;
     }
 
-    public Task<List<Order>> GetAllAsync()
-        => _orders.GetAllAsync();
+    public Task<List<Order>> GetAllAsync(CancellationToken ct)
+    => _orders.GetAllAsync(ct);
 
-    public Task<Order?> GetByIdAsync(int id)
-        => _orders.GetByIdAsync(id);
+    public Task<Order?> GetByIdAsync(int id, CancellationToken ct)
+        => _orders.GetByIdAsync(id, ct);
 
-    public async Task<Order> CreateAsync(string customerName)
+    public async Task<Order> CreateAsync(string customerName, CancellationToken ct)
     {
         var order = new Order
         {
@@ -29,15 +29,15 @@ public class OrderService
             Status = OrderStatus.Draft
         };
 
-        await _orders.AddAsync(order);
-        await _orders.SaveChangesAsync();
+        await _orders.AddAsync(order, ct);
+        await _orders.SaveChangesAsync(ct);
 
         return order;
     }
 
-    public async Task<(bool ok, string? error, Order? order)> ConfirmAsync(int id)
+    public async Task<(bool ok, string? error, Order? order)> ConfirmAsync(int id, CancellationToken ct)
     {
-        var order = await _orders.GetByIdAsync(id);
+        var order = await _orders.GetByIdAsync(id, ct);
         if (order is null)
             return (false, "Order not found", null);
 
@@ -51,17 +51,16 @@ public class OrderService
             Type = "OrderConfirmed",
             PayloadJson = $"{{\"orderId\":{order.Id}}}",
             CreatedAtUtc = DateTime.UtcNow
-        });
+        }, ct);
 
-        // Un solo SaveChanges: guarda Order + Outbox en la misma transaccion (mismo DbContext)
-        await _orders.SaveChangesAsync();
+        await _orders.SaveChangesAsync(ct);
 
         return (true, null, order);
     }
 
-    public async Task<(bool ok, string? error, Order? order)> CancelAsync(int id)
+    public async Task<(bool ok, string? error, Order? order)> CancelAsync(int id, CancellationToken ct)
     {
-        var order = await _orders.GetByIdAsync(id);
+        var order = await _orders.GetByIdAsync(id, ct);
         if (order is null)
             return (false, "Order not found", null);
 
@@ -69,8 +68,48 @@ public class OrderService
             return (false, "Order already cancelled", null);
 
         order.Status = OrderStatus.Cancelled;
-        await _orders.SaveChangesAsync();
+        await _orders.SaveChangesAsync(ct);
 
         return (true, null, order);
     }
+
+    public async Task<(bool ok, string? error, Order? order)> AddItemAsync(
+        int orderId,
+        string name,
+        int quantity,
+        decimal unitPrice,
+        CancellationToken ct)
+    {
+        var order = await _orders.GetByIdAsync(orderId, ct);
+        if (order is null)
+            return (false, "Order not found", null);
+
+        if (order.Status != OrderStatus.Draft)
+            return (false, "Only Draft orders can be edited", null);
+
+        if (string.IsNullOrWhiteSpace(name))
+            return (false, "Item name is required", null);
+
+        if (quantity <= 0)
+            return (false, "Quantity must be > 0", null);
+
+        if (unitPrice < 0)
+            return (false, "UnitPrice must be >= 0", null);
+
+        var item = new OrderItem
+        {
+            OrderId = order.Id,
+            Name = name.Trim(),
+            Quantity = quantity,
+            UnitPrice = unitPrice
+        };
+
+        await _orders.AddItemAsync(item, ct);
+        await _orders.SaveChangesAsync(ct);
+
+        var updated = await _orders.GetByIdAsync(orderId, ct);
+
+        return (true, null, updated);
+    }
+
 }

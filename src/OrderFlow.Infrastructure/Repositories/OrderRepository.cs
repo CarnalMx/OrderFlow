@@ -14,26 +14,35 @@ public class OrderRepository : IOrderRepository
         _db = db;
     }
 
-    public async Task<List<Order>> GetAllAsync()
+    public async Task<List<Order>> GetAllAsync(CancellationToken ct)
     {
         return await _db.Orders
             .OrderByDescending(o => o.Id)
             .ToListAsync();
     }
 
-    public async Task<Order?> GetByIdAsync(int id)
+    public async Task<Order?> GetByIdAsync(int id, CancellationToken ct)
     {
-        return await _db.Orders.FindAsync(id);
+        return await _db.Orders
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
     }
 
-    public Task<Order> AddAsync(Order order)
+    public Task<Order> AddAsync(Order order, CancellationToken ct)
     {
         _db.Orders.Add(order);
         return Task.FromResult(order);
     }
 
-    public async Task SaveChangesAsync()
+    public async Task SaveChangesAsync(CancellationToken ct)
     {
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
     }
+
+    public Task AddItemAsync(OrderItem item, CancellationToken ct)
+    {
+        _db.OrderItems.Add(item);
+        return Task.CompletedTask;
+    }
+
 }

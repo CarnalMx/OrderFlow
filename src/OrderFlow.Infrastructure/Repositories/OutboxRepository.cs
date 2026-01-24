@@ -13,9 +13,15 @@ public class OutboxRepository : IOutboxRepository
         _db = db;
     }
 
-    public Task AddAsync(OutboxMessage message)
+    public Task AddAsync(OutboxMessage message, CancellationToken ct)
     {
         _db.OutboxMessages.Add(message);
         return Task.CompletedTask;
     }
+
+    public Task SaveChangesAsync(CancellationToken ct)
+    {
+        return _db.SaveChangesAsync(ct);
+    }
+
 }

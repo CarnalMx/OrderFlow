@@ -13,12 +13,18 @@ public class OrderServiceTests
     {
         public List<OutboxMessage> Messages { get; } = new();
 
-        public Task AddAsync(OutboxMessage message)
+        public Task AddAsync(OutboxMessage message, CancellationToken ct)
         {
             Messages.Add(message);
             return Task.CompletedTask;
         }
+
+        public Task SaveChangesAsync(CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
     }
+
     private static OrderService CreateService(out AppDbContext db, out FakeOutboxRepository outbox)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -38,7 +44,7 @@ public class OrderServiceTests
     {
         var service = CreateService(out var db, out var outbox);
 
-        var order = await service.CreateAsync("Carlos");
+        var order = await service.CreateAsync("Carlos", CancellationToken.None);
 
         Assert.NotNull(order);
         Assert.Equal("Carlos", order.CustomerName);
@@ -51,9 +57,9 @@ public class OrderServiceTests
     {
         var service = CreateService(out var db, out var outbox);
 
-        var created = await service.CreateAsync("Carlos");
+        var created = await service.CreateAsync("Carlos", CancellationToken.None);
 
-        var (ok, error, confirmed) = await service.ConfirmAsync(created.Id);
+        var (ok, error, confirmed) = await service.ConfirmAsync(created.Id, CancellationToken.None);
 
         Assert.True(ok);
         Assert.Null(error);
@@ -66,10 +72,10 @@ public class OrderServiceTests
     {
         var service = CreateService(out var db, out var outbox);
 
-        var created = await service.CreateAsync("Carlos");
-        await service.ConfirmAsync(created.Id);
+        var created = await service.CreateAsync("Carlos", CancellationToken.None);
+        await service.ConfirmAsync(created.Id, CancellationToken.None);
 
-        var (ok, error, confirmed) = await service.ConfirmAsync(created.Id);
+        var (ok, error, confirmed) = await service.ConfirmAsync(created.Id, CancellationToken.None);
 
         Assert.False(ok);
         Assert.NotNull(error);
@@ -81,10 +87,10 @@ public class OrderServiceTests
     {
         var service = CreateService(out var db, out var outbox);
 
-        var created = await service.CreateAsync("Carlos");
-        await service.CancelAsync(created.Id);
+        var created = await service.CreateAsync("Carlos", CancellationToken.None);
+        await service.CancelAsync(created.Id, CancellationToken.None);
 
-        var (ok, error, cancelled) = await service.CancelAsync(created.Id);
+        var (ok, error, cancelled) = await service.CancelAsync(created.Id, CancellationToken.None);
 
         Assert.False(ok);
         Assert.NotNull(error);
@@ -96,7 +102,7 @@ public class OrderServiceTests
     {
         var service = CreateService(out var db, out var outbox);
 
-        var (ok, error, order) = await service.ConfirmAsync(999);
+        var (ok, error, order) = await service.ConfirmAsync(999, CancellationToken.None);
 
         Assert.False(ok);
         Assert.Equal("Order not found", error);
@@ -108,8 +114,8 @@ public class OrderServiceTests
     {
         var service = CreateService(out var db, out var outbox);
 
-        var created = await service.CreateAsync("Carlos");
-        await service.ConfirmAsync(created.Id);
+        var created = await service.CreateAsync("Carlos", CancellationToken.None);
+        await service.ConfirmAsync(created.Id, CancellationToken.None);
 
         Assert.Single(outbox.Messages);
         Assert.Equal("OrderConfirmed", outbox.Messages[0].Type);

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace OrderFlow.Domain.Models;
 
 public class Order
@@ -7,4 +9,9 @@ public class Order
 	public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public OrderStatus Status { get; set; } = OrderStatus.Draft;
+
+	public List<OrderItem> Items { get; set; } = new();
+
+    public decimal Total => Items.Sum(i => i.LineTotal);
+
 }
