@@ -264,4 +264,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 **Carlos Araujo**  
-GitHub: https://github.com/caraujo-dev
+GitHub: https://github.com/CarAraujo-Dev
