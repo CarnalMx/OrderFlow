@@ -16,6 +16,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IOutboxStore, OutboxStore>();
+builder.Services.AddScoped<IOutboxReader, OutboxReader>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
 
@@ -43,7 +44,9 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/debug/crash", () =>
     {
         throw new Exception("Boom");
-    });
+    })
+    .ExcludeFromDescription();
+
 
 }
 
@@ -59,6 +62,7 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapOrdersEndpoints();
+app.MapOutboxEndpoints();
 
 app.Run();
 
