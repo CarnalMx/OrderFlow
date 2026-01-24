@@ -159,7 +159,7 @@ Read-only endpoints for operational monitoring:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/caraujo-dev/OrderFlow.git
+   git clone https://github.com/CarAraujo-Dev/OrderFlow.git
    cd OrderFlow
 
    ```
