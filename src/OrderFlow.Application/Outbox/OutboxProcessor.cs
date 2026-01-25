@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
+using System.Diagnostics;
 
 namespace OrderFlow.Application.Outbox;
 
@@ -11,6 +12,7 @@ public class OutboxProcessor
 
     private readonly string _workerId = $"worker-{Environment.MachineName}-{Guid.NewGuid():N}";
     private static readonly TimeSpan LockDuration = TimeSpan.FromSeconds(30);
+    private readonly IWorkerMetrics _metrics;
 
     private const int Take = 10;
     private const int MaxAttempts = 5;
@@ -20,11 +22,13 @@ public class OutboxProcessor
     public OutboxProcessor(
         IOutboxStore store,
         IEnumerable<IOutboxHandler> handlers,
-        ILogger<OutboxProcessor> logger)
+        ILogger<OutboxProcessor> logger,
+        IWorkerMetrics metrics)
     {
         _store = store;
         _handlers = handlers;
         _logger = logger;
+        _metrics = metrics;
     }
 
     public async Task ProcessOnceAsync(CancellationToken ct)
@@ -47,7 +51,12 @@ public class OutboxProcessor
                 var handler = _handlers.FirstOrDefault(h => h.Type == msg.Type)
                     ?? throw new Exception($"No handler registered for outbox type '{msg.Type}'");
 
+                var sw = Stopwatch.StartNew();
+
                 await handler.HandleAsync(msg, ct);
+
+                sw.Stop();
+                _metrics.RecordProcessedMessage(sw.Elapsed);
 
                 await _store.MarkProcessedAsync(msg, DateTime.UtcNow, ct);
             }

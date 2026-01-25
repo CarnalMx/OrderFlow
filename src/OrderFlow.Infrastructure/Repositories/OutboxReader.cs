@@ -43,4 +43,14 @@ public class OutboxReader : IOutboxReader
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == id, ct);
     }
+
+    public Task<int> CountPendingAsync(DateTime nowUtc, CancellationToken ct)
+    {
+        return _db.OutboxMessages
+            .Where(m => m.ProcessedAtUtc == null)
+            .Where(m => m.NextAttemptAtUtc == null || m.NextAttemptAtUtc <= nowUtc)
+            .Where(m => m.LockExpireAtUtc == null || m.LockExpireAtUtc <= nowUtc)
+            .CountAsync(ct);
+    }
+
 }
