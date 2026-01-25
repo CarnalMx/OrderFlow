@@ -240,12 +240,13 @@ This project adheres to the following guidelines:
 
 - **Incremental Evolution**: Changes are made in small, tested increments
 - **Pragmatic Abstractions**: Interfaces exist where they provide value, not everywhere
-- **Tests as Documentation**: Tests demonstrate intended behavior and usage patterns
+- **Tests as Documentation**: Integration tests run against SQL Server (using EF Core migrations) and are executed sequentially to avoid conflicts during database reset.
 
 ## Roadmap
 
 Potential enhancements for future versions:
 
+- [x] Worker status metrics endpoint (processed count, avg time, pending queue)
 - [ ] Docker Compose for SQL Server + local run
 - [ ] OpenTelemetry tracing 
 - [ ] Rate limiting
