@@ -67,7 +67,8 @@ public class OutboxProcessorIntegrationTests
             var processor = new OutboxProcessor(
                 store,
                 handlers: Array.Empty<IOutboxHandler>(),
-                logger: NullLogger<OutboxProcessor>.Instance);
+                logger: NullLogger<OutboxProcessor>.Instance,
+                metrics: new FakeWorkerMetrics());
 
             await processor.ProcessOnceAsync(CancellationToken.None);
         }
@@ -137,7 +138,8 @@ public class OutboxProcessorIntegrationTests
                 var processor = new OutboxProcessor(
                     store,
                     handlers: Array.Empty<IOutboxHandler>(),
-                    logger: NullLogger<OutboxProcessor>.Instance);
+                    logger: NullLogger<OutboxProcessor>.Instance,
+                    metrics: new FakeWorkerMetrics());
 
                 await processor.ProcessOnceAsync(CancellationToken.None);
             }
@@ -187,14 +189,16 @@ public class OutboxProcessorIntegrationTests
         using var db2 = TestDbFactory.CreateDbContext();
 
         var p1 = new OutboxProcessor(
-            new OutboxStore(db1),
+            store: new OutboxStore(db1),
             handlers: new[] { handler },
-            logger: NullLogger<OutboxProcessor>.Instance);
+            logger: NullLogger<OutboxProcessor>.Instance,
+            metrics: new FakeWorkerMetrics());
 
         var p2 = new OutboxProcessor(
-            new OutboxStore(db2),
+            store: new OutboxStore(db2),
             handlers: new[] { handler },
-            logger: NullLogger<OutboxProcessor>.Instance);
+            logger: NullLogger<OutboxProcessor>.Instance,
+            metrics: new FakeWorkerMetrics());
 
         await Task.WhenAll(
             p1.ProcessOnceAsync(CancellationToken.None),

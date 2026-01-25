@@ -25,7 +25,11 @@ public static class TestDbFactory
 
     public static async Task ResetDatabaseAsync(AppDbContext db)
     {
-        await db.Database.EnsureDeletedAsync();
         await db.Database.MigrateAsync();
+
+        await db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.OrderItems");
+        await db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.OutboxMessages");
+        await db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.Orders");
+
     }
 }
