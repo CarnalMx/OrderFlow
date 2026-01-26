@@ -1,0 +1,7 @@
+.ofTable tbody tr {
+  transition: background 0.15s ease;
+}
+
+.ofTable tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}

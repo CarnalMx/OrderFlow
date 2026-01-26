@@ -1,0 +1,34 @@
+.splitView {
+  height: 100%;
+  display: flex;
+  min-height: 0;
+}
+
+.splitLeft {
+  width: 420px;
+  min-width: 320px;
+  overflow: auto;
+  min-height: 0;
+
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.splitRight {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* Responsive: en pantallas chicas se apilan */
+@media (max-width: 900px) {
+  .splitView {
+    flex-direction: column;
+  }
+
+  .splitLeft {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}

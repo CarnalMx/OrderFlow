@@ -1,0 +1,86 @@
+.appShell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  background: rgba(10, 16, 30, 0.75);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandTitle {
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+
+.brandBadge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  background: rgba(124, 92, 255, 0.2);
+  border: 1px solid rgba(124, 92, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.nav {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 14px;
+
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.navLink {
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
+
+  color: var(--muted);
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  transition: 0.15s ease;
+}
+
+.navLink:hover {
+  color: var(--text);
+  background: var(--panel2);
+}
+
+.navLink.active {
+  color: var(--text);
+  background: rgba(124, 92, 255, 0.25);
+  border: 1px solid rgba(124, 92, 255, 0.35);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;   /* ✅ clave */
+  overflow: hidden; /* ✅ clave */
+  padding: 0;
+}
+
