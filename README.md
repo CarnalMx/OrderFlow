@@ -1,20 +1,25 @@
-﻿# OrderFlow
+# OrderFlow
 
-A backend-focused order management system demonstrating enterprise-grade .NET patterns including Clean Architecture, the Transactional Outbox pattern, and reliable asynchronous processing.
+OrderFlow is a portfolio project built to practice common backend engineering patterns in **C# / .NET 8**, with a focus on **reliability** and **clean separation of responsibilities**.
 
-[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-.NET_8-512BD4?logo=dotnet&logoColor=white)](https://learn.microsoft.com/aspnet/core/)
+[![EF Core](https://img.shields.io/badge/EF_Core-8.0-512BD4?logo=dotnet&logoColor=white)](https://learn.microsoft.com/ef/core/)
+[![SQL Server](https://img.shields.io/badge/SQL_Server-Express-CC2927?logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## Overview
 
-OrderFlow is a portfolio project showcasing production-ready backend engineering patterns in C# and .NET 8. The system implements a simplified order management workflow with emphasis on data consistency, reliability, and observability.
+OrderFlow showcases common backend engineering patterns in C# and .NET 8. The system implements a simplified order management workflow with emphasis on data consistency, reliability, and observability.
 
 **Key Focus Areas:**
 - Clean architecture with explicit layer boundaries
 - Transactional consistency using the Outbox pattern
 - Reliable message processing with retry logic and dead-letter handling
 - Request tracing and correlation
-- Comprehensive testing strategy
+- Focused unit and integration tests for core reliability scenarios
 
 > **Note:** This project focuses on backend architecture and reliability. Swagger is used as the primary interface.
 
@@ -30,16 +35,15 @@ The main goal is to practice patterns commonly found in real-world backend teams
 
 ## Current Version
 
-**v0.1.0** - MVP Release
+**v0.1.0** - Learning MVP
 
 **Features:**
 - Order and order item management
 - SQL Server persistence with EF Core migrations
-- Transactional Outbox implementation
-- Background worker with exponential backoff retry
-- Atomic message claiming to prevent duplicate processing
-- Correlation ID middleware for request tracing
-- Unit and integration test coverage
+- Simplified Transactional Outbox pattern
+- Background worker with retry logic
+- Request correlation middleware
+- Focused test coverage (persistence, outbox processing, retries, dead-letter, concurrency)
 
 ## Technology Stack
 
@@ -49,6 +53,7 @@ The main goal is to practice patterns commonly found in real-world backend teams
 | Web Framework | ASP.NET Core (Minimal APIs) |
 | ORM | Entity Framework Core |
 | Database | SQL Server Express |
+| Web Demo UI | React + Vite |
 | Testing | xUnit |
 
 ## Architecture
@@ -95,7 +100,7 @@ Ensures data consistency when performing database updates and publishing events:
 
 1. **Atomic Write**: Order state changes and outbox messages are saved in a single transaction
 2. **Asynchronous Processing**: Background worker polls and processes messages independently
-3. **Guaranteed Delivery**: Messages are persisted before being processed, ensuring at-least-once delivery
+3. **At-least-once delivery pattern**: Messages are persisted before being processed, ensuring at-least-once delivery
 
 **Example Flow:**
 ```
@@ -154,6 +159,7 @@ Read-only endpoints for operational monitoring:
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [SQL Server Express](https://www.microsoft.com/sql-server/sql-server-downloads) (or any SQL Server instance)
+- (Optional) Node.js 18+ (for the demo web UI)
 
 ### Setup
 
@@ -161,12 +167,19 @@ Read-only endpoints for operational monitoring:
    ```bash
    git clone https://github.com/CarAraujo-Dev/OrderFlow.git
    cd OrderFlow
-
    ```
 
 2. **Configure database connection**
    
    Update `appsettings.json` in `OrderFlow.Api` with your SQL Server connection string.
+
+   Example:
+
+   ```json
+   "ConnectionStrings": {
+     "Default": "Server=localhost\\SQLEXPRESS;Database=OrderFlowDbV2;Trusted_Connection=True;TrustServerCertificate=True;"
+   }
+   ```
 
 3. **Apply migrations**
    ```bash
@@ -174,6 +187,7 @@ Read-only endpoints for operational monitoring:
      --project src/OrderFlow.Infrastructure \
      --startup-project src/OrderFlow.Api
    ```
+   > This will create the database schema automatically if it does not exist.
 
 4. **Run the application**
    ```bash
@@ -183,6 +197,32 @@ Read-only endpoints for operational monitoring:
 5. **Access Swagger UI**
    
    Navigate to `https://localhost:<port>/swagger`
+
+### Web Demo UI (Optional)
+
+The web demo UI is optional and mainly exists as a lightweight interface for demo purposes.
+
+1. Go to the web project folder:
+   ```bash
+   cd src/OrderFlow.Web
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open the app:
+   ```
+   http://localhost:5173
+   ```
+
+✅ If the API runs on a different port, you may need to configure the API base URL in the web app.
 
 ## Demo Workflow
 
@@ -203,7 +243,6 @@ POST /orders/1/items
   "unitPrice": 29.99
 }
 
-
 # 3. Confirm the order (publishes outbox message)
 POST /orders/1/confirm
 
@@ -218,11 +257,27 @@ GET /outbox?status=processed
 
 ## Testing
 
-Run the test suite:
+### Integration Tests - Database
 
-```bash
-dotnet test
+Integration tests use a dedicated SQL Server database via a separate `Testing` connection string.
+
+Location:
+- `tests/appsettings.Testing.json`
+
+Example:
+
+```json
+{
+  "ConnectionStrings": {
+    "Testing": "Server=localhost\\SQLEXPRESS;Database=OrderFlowDb_Test;Trusted_Connection=True;TrustServerCertificate=True"
+  }
+}
 ```
+
+**Notes:**
+
+> **Note:** Test parallelization is disabled because some integration tests reset the testing database.
+> Running them in parallel can cause conflicts and failures due to concurrent DB teardown/setup.
 
 **Test Coverage:**
 - **Unit Tests**: Business logic and domain rules (using EF Core InMemory provider)
@@ -246,12 +301,12 @@ This project adheres to the following guidelines:
 
 Potential enhancements for future versions:
 
-- [x] Worker status metrics endpoint (processed count, avg time, pending queue)
-- [ ] Docker Compose for SQL Server + local run
-- [ ] OpenTelemetry tracing 
+- [x] Worker status metrics endpoint
+- [ ] Docker Compose setup for easier local development
+- [ ] Improved logging and observability
 - [ ] Rate limiting
 - [ ] Idempotency for confirm endpoint
-- [ ] CI pipeline (build + test)
+- [ ] CI/CD pipeline basics
 
 ## Contributing
 
@@ -260,7 +315,6 @@ This is a learning project, but feedback and suggestions are welcome! Feel free 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 
 ## Author
 
