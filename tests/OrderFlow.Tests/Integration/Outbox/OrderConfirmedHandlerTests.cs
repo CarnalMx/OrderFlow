@@ -1,7 +1,7 @@
 ﻿using OrderFlow.Application.Outbox.Handlers;
 using OrderFlow.Domain.Models;
 
-namespace OrderFlow.Tests.Outbox;
+namespace OrderFlow.Tests.Integration.Outbox;
 
 public class OrderConfirmedHandlerTests
 {

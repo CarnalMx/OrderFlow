@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Xunit;
 
-namespace OrderFlow.Tests.Api;
+namespace OrderFlow.Tests.Integration.Api;
 
 public class ExceptionHandlingTests : IClassFixture<WebApplicationFactory<Program>>
 {

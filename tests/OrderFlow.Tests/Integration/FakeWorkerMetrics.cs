@@ -1,6 +1,6 @@
 ﻿using OrderFlow.Application.Abstractions;
 
-namespace OrderFlow.Tests.Testing;
+namespace OrderFlow.Tests.Integration;
 
 public sealed class FakeWorkerMetrics : IWorkerMetrics
 {

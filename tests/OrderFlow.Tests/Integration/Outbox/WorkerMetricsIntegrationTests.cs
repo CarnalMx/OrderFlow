@@ -3,10 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using OrderFlow.Application.Outbox;
 using OrderFlow.Domain.Models;
 using OrderFlow.Infrastructure.Repositories;
-using OrderFlow.Tests.Testing;
 using Xunit;
 
-namespace OrderFlow.Tests.Outbox;
+namespace OrderFlow.Tests.Integration.Outbox;
 
 public class WorkerMetricsIntegrationTests
 {

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using OrderFlow.Infrastructure.Data;
 
-namespace OrderFlow.Tests.Testing;
+namespace OrderFlow.Tests.Integration;
 
 public static class TestDbFactory
 {
