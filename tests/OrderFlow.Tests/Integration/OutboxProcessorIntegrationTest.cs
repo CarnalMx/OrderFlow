@@ -6,7 +6,7 @@ using OrderFlow.Infrastructure.Repositories;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace OrderFlow.Tests.Integration.Outbox;
+namespace OrderFlow.Tests.Integration;
 
 public class OutboxProcessorIntegrationTests
 {
